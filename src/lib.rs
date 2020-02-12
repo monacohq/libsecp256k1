@@ -400,6 +400,12 @@ impl core::fmt::LowerHex for SecretKey {
 }
 
 impl Signature {
+    pub fn is_canonical(&self) -> bool {
+        let ret = self.serialize();
+        (ret[0] & 0x80 == 0) && !((ret[0] == 0) && (ret[1] & 0x80 == 0))
+            && (ret[32] & 0x80 == 0) && !((ret[32] == 0) && (ret[33] & 0x80 == 0))
+    }
+
     pub fn parse(p: &[u8; util::SIGNATURE_SIZE]) -> Signature {
         let mut r = Scalar::default();
         let mut s = Scalar::default();
@@ -637,32 +643,35 @@ pub fn sign(message: &Message, seckey: &SecretKey) -> (Signature, RecoveryId) {
     let mut nonce = Scalar::default();
     let mut overflow;
 
-    let result;
+    let mut i = 0u8;
     loop {
-        let generated = drbg.generate::<U32>(None);
+        let generated = drbg.generate::<U32>(Some(&[i; 32]));
         overflow = bool::from(nonce.set_b32(array_ref!(generated, 0, 32)));
 
         if !overflow && !nonce.is_zero() {
             match ECMULT_GEN_CONTEXT.sign_raw(&seckey.0, &message.0, &nonce) {
                 Ok(val) => {
-                    result = val;
-                    break
+                    let (sigr, sigs, recid) = val;
+
+                    let sig = Signature {
+                        r: sigr,
+                        s: sigs,
+                    };
+
+                    if sig.is_canonical() {
+                        #[allow(unused_assignments)]
+                        {
+                            nonce = Scalar::default();
+                        }
+
+                        return (sig, RecoveryId(recid));
+                    }
+                    i = i + 1;
                 },
                 Err(_) => (),
             }
         }
     }
-
-    #[allow(unused_assignments)]
-    {
-        nonce = Scalar::default();
-    }
-    let (sigr, sigs, recid) = result;
-
-    (Signature {
-        r: sigr,
-        s: sigs,
-    }, RecoveryId(recid))
 }
 
 #[cfg(test)]
