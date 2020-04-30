@@ -645,8 +645,10 @@ pub fn sign(message: &Message, seckey: &SecretKey) -> (Signature, RecoveryId) {
 
     let mut i = 0u8;
     loop {
+        dbg!(&nonce);
         let generated = drbg.generate::<U32>(Some(&[i; 32]));
         overflow = bool::from(nonce.set_b32(array_ref!(generated, 0, 32)));
+        dbg!(&nonce.is_zero(), overflow);
 
         if !overflow && !nonce.is_zero() {
             match ECMULT_GEN_CONTEXT.sign_raw(&seckey.0, &message.0, &nonce) {
@@ -678,6 +680,7 @@ pub fn sign(message: &Message, seckey: &SecretKey) -> (Signature, RecoveryId) {
 mod tests {
     use crate::SecretKey;
     use hex_literal::hex;
+    use super::*;
 
     #[test]
     fn secret_key_inverse_is_sane() {
@@ -688,4 +691,18 @@ mod tests {
         // Check that the inverse of `[1; 32]` is same as rust-secp256k1
         assert_eq!(inv, SecretKey::parse(&hex!("1536f1d756d1abf83aaf173bc5ee3fc487c93010f18624d80bd6d4038fadd59e")).unwrap())
     }
+
+    #[test]
+    fn test_signature_canonical() {
+        let sk = SecretKey::parse(&[1; 32]).unwrap();
+        let msg = Message::parse_slice(&[1; 32]);
+        assert!(msg.is_ok());
+
+        let msg = msg.unwrap();
+
+        let (sig, id) = sign(&msg, &sk);
+        assert!(sig.is_canonical());
+        dbg!(hex::encode(&sig.serialize()[..]), id);
+    }
 }
+
