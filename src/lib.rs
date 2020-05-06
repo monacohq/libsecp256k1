@@ -645,10 +645,8 @@ pub fn sign(message: &Message, seckey: &SecretKey) -> (Signature, RecoveryId) {
 
     let mut i = 0u8;
     loop {
-        dbg!(&nonce);
         let generated = drbg.generate::<U32>(Some(&[i; 32]));
         overflow = bool::from(nonce.set_b32(array_ref!(generated, 0, 32)));
-        dbg!(&nonce.is_zero(), overflow);
 
         if !overflow && !nonce.is_zero() {
             match ECMULT_GEN_CONTEXT.sign_raw(&seckey.0, &message.0, &nonce) {
@@ -700,9 +698,9 @@ mod tests {
 
         let msg = msg.unwrap();
 
-        let (sig, id) = sign(&msg, &sk);
+        let (sig, _id) = sign(&msg, &sk);
         assert!(sig.is_canonical());
-        dbg!(hex::encode(&sig.serialize()[..]), id);
+        // dbg!(hex::encode(&sig.serialize()[..]), id);
     }
 }
 
