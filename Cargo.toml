@@ -20,7 +20,6 @@ typenum = { version = "1.11", optional = true }
 arrayref = "0.3"
 subtle = { version = "2.2", default-features = false }
 crunchy = "0.2"
-hex = "0.4"
 
 [dev-dependencies]
 secp256k1-test = "0.7"

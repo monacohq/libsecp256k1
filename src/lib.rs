@@ -700,7 +700,6 @@ mod tests {
 
         let (sig, _id) = sign(&msg, &sk);
         assert!(sig.is_canonical());
-        // dbg!(hex::encode(&sig.serialize()[..]), id);
     }
 }
 
