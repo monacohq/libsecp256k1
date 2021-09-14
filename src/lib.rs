@@ -3,14 +3,14 @@
 //! Ethereum-alike cryptocurrencies.
 
 #![deny(
-    unused_import_braces,
-    unused_imports,
-    unused_comparisons,
-    unused_must_use,
-    unused_variables,
-    non_shorthand_field_patterns,
-    unreachable_code,
-    unused_parens
+unused_import_braces,
+unused_imports,
+unused_comparisons,
+unused_must_use,
+unused_variables,
+non_shorthand_field_patterns,
+unreachable_code,
+unused_parens
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -64,31 +64,35 @@ pub static ECMULT_GEN_CONTEXT: ECMultGenContext =
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Public key on a secp256k1 curve.
 pub struct PublicKey(Affine);
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Secret key (256-bit) on a secp256k1 curve.
 pub struct SecretKey(Scalar);
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// An ECDSA signature.
 pub struct Signature {
     pub r: Scalar,
     pub s: Scalar,
 }
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Tag used for public key recovery from signatures.
 pub struct RecoveryId(u8);
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 /// Hashed message input to an ECDSA signature.
 pub struct Message(pub Scalar);
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 /// Shared secret using ECDH.
 pub struct SharedSecret<D: Digest>(GenericArray<u8, D::OutputSize>);
 
 impl<D> Copy for SharedSecret<D>
-where
-    D: Copy + Digest,
-    GenericArray<u8, D::OutputSize>: Copy,
-{
-}
+    where
+        D: Copy + Digest,
+        GenericArray<u8, D::OutputSize>: Copy,
+{}
 
 /// Format for public key parsing.
 pub enum PublicKeyFormat {
@@ -316,17 +320,23 @@ impl Into<Affine> for PublicKey {
     }
 }
 
-impl From<Affine> for PublicKey {
-    fn from(affine: Affine) -> Self {
-        PublicKey(affine)
+impl TryFrom<Affine> for PublicKey {
+    type Error = Error;
+
+    fn try_from(value: Affine) -> Result<Self, Self::Error> {
+        if value.is_infinity() | !value.is_valid_var() {
+            Err(Error::InvalidAffine)
+        } else {
+            Ok(PublicKey(value))
+        }
     }
 }
 
 #[cfg(feature = "std")]
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         if serializer.is_human_readable() {
             serializer.serialize_str(&base64::encode(&self.serialize()[..]))
@@ -349,8 +359,8 @@ impl<'de> de::Visitor<'de> for PublicKeyVisitor {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
+        where
+            E: de::Error,
     {
         let value: &[u8] = &base64::decode(value).unwrap();
         let key_format = match value.len() {
@@ -367,8 +377,8 @@ impl<'de> de::Visitor<'de> for PublicKeyVisitor {
 #[cfg(feature = "std")]
 impl<'de> Deserialize<'de> for PublicKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: de::Deserializer<'de>,
+        where
+            D: de::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
             deserializer.deserialize_str(PublicKeyVisitor)
@@ -853,7 +863,7 @@ mod tests {
             SecretKey::parse(&hex!(
                 "1536f1d756d1abf83aaf173bc5ee3fc487c93010f18624d80bd6d4038fadd59e"
             ))
-            .unwrap()
+                .unwrap()
         )
     }
 
