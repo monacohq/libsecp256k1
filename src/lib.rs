@@ -514,7 +514,6 @@ impl Signature {
             && !((ret[32] == 0) && (ret[33] & 0x80 == 0))
     }
 
-    pub fn parse(p: &[u8; util::SIGNATURE_SIZE]) -> Signature {
     /// Parse an possibly overflowing signature.
     ///
     /// A SECP256K1 signature is usually required to be within 0 and curve
